@@ -64,11 +64,11 @@ func init() {
 }
 
 type (
-	Marshal   func(v interface{}) ([]byte, error)
-	Unmarshal func(data []byte, v interface{}) error
+	MarshalFunc   func(v interface{}) ([]byte, error)
+	UnmarshalFunc func(data []byte, v interface{}) error
 
-	NewEncoder func(w io.Writer) Encoder
-	NewDecoder func(r io.Reader) Decoder
+	EncoderFunc func(w io.Writer) Encoder
+	DecoderFunc func(r io.Reader) Decoder
 )
 
 type (
@@ -81,13 +81,13 @@ type (
 )
 
 type Engine struct {
-	marshal   Marshal
-	unmarshal Unmarshal
-	ne        NewEncoder
-	nd        NewDecoder
+	marshal   MarshalFunc
+	unmarshal UnmarshalFunc
+	eFunc     EncoderFunc
+	dFunc     DecoderFunc
 }
 
-func Register(name string, m Marshal, um Unmarshal) {
+func Register(name string, m MarshalFunc, um UnmarshalFunc) {
 	e, ok := set[name]
 	if !ok {
 		e = &Engine{}
@@ -97,14 +97,30 @@ func Register(name string, m Marshal, um Unmarshal) {
 	e.unmarshal = um
 }
 
-func RegisterED(name string, ne NewEncoder, nd NewDecoder) {
+func RegisterED(name string, eFunc EncoderFunc, dFunc DecoderFunc) {
 	e, ok := set[name]
 	if !ok {
 		e = &Engine{}
 		set[name] = e
 	}
-	e.ne = ne
-	e.nd = nd
+	e.eFunc = eFunc
+	e.dFunc = dFunc
+}
+
+func Marshal(typ string, v interface{}) ([]byte, error) {
+	e, ok := set[typ]
+	if !ok {
+		return nil, fmt.Errorf("failed to find %s engine", typ)
+	}
+	return e.marshal(v)
+}
+
+func Unmarshal(typ string, data []byte, v interface{}) error {
+	e, ok := set[typ]
+	if !ok {
+		return fmt.Errorf("failed to find %s engine", typ)
+	}
+	return e.unmarshal(data, v)
 }
 
 type Transfer struct {
@@ -145,13 +161,13 @@ func (t *Transfer) ExchangeED(r io.Reader, w io.Writer) error {
 		return errors.New("failed to find writer engine")
 	}
 	var spec interface{}
-	if err := iParser.nd(r).Decode(&spec); err != nil {
+	if err := iParser.dFunc(r).Decode(&spec); err != nil {
 		return err
 	}
 	if err := transformData(&spec); err != nil {
 		return err
 	}
-	return oParser.ne(w).Encode(&spec)
+	return oParser.eFunc(w).Encode(&spec)
 }
 
 func transformData(pIn *interface{}) (err error) {

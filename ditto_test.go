@@ -71,8 +71,8 @@ func TestNewTransfer(t *testing.T) {
 func TestRegister(t *testing.T) {
 	type args struct {
 		name string
-		m    Marshal
-		um   Unmarshal
+		m    MarshalFunc
+		um   UnmarshalFunc
 	}
 	tests := []struct {
 		name string
@@ -97,8 +97,8 @@ func TestRegister(t *testing.T) {
 func TestRegisterED(t *testing.T) {
 	type args struct {
 		name string
-		ne   NewEncoder
-		nd   NewDecoder
+		ne   EncoderFunc
+		nd   DecoderFunc
 	}
 	tests := []struct {
 		name string
