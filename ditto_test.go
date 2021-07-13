@@ -125,12 +125,32 @@ func TestRegisterED(t *testing.T) {
 }
 
 const (
-	jsonStr = `{"a":1,"b":[1,2,3]}`
-	yamlStr = `a: 1
-b:
-- 1
-- 2
-- 3`
+	jsonStr = `{"database":{"connection_max":5000,"ports":[8001,8002,8003],"server":"127.0.0.1"},"owner":{"name":"zc"},"title":"demo"}`
+
+	yamlStr = `
+database:
+  connection_max: 5000
+  ports:
+  - 8001
+  - 8002
+  - 8003
+  server: 127.0.0.1
+owner:
+  name: zc
+title: demo
+`
+
+	tomlStr = `
+title = "demo"
+
+[database]
+  connection_max = 5000
+  ports = [8001, 8002, 8003]
+  server = "127.0.0.1"
+
+[owner]
+  name = "zc"
+`
 )
 
 func TestTransfer_Exchange(t1 *testing.T) {
@@ -172,6 +192,30 @@ func TestTransfer_Exchange(t1 *testing.T) {
 			want:    []byte(jsonStr),
 			wantErr: false,
 		},
+		{
+			name: "toml-to-json",
+			fields: fields{
+				in:  FormatTOML,
+				out: FormatJSON,
+			},
+			args: args{
+				data: []byte(tomlStr),
+			},
+			want:    []byte(jsonStr),
+			wantErr: false,
+		},
+		{
+			name: "yaml-to-toml",
+			fields: fields{
+				in:  FormatYaml,
+				out: FormatTOML,
+			},
+			args: args{
+				data: []byte(yamlStr),
+			},
+			want:    []byte(tomlStr),
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
@@ -184,12 +228,19 @@ func TestTransfer_Exchange(t1 *testing.T) {
 				t1.Errorf("Exchange() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			got = bytes.TrimSuffix(got, []byte("\n"))
+			got = UnifiedTreatment(got)
+			tt.want = UnifiedTreatment(tt.want)
 			if !reflect.DeepEqual(got, tt.want) {
-				t1.Errorf("Exchange() got = %v, want %v", got, tt.want)
+				t1.Errorf("Exchange() got = %s\n want = %s\n", got, tt.want)
 			}
 		})
 	}
+}
+
+func UnifiedTreatment(data []byte) []byte {
+	data = bytes.TrimPrefix(data, []byte("\n"))
+	data = bytes.TrimSuffix(data, []byte("\n"))
+	return data
 }
 
 func TestTransfer_ExchangeED(t1 *testing.T) {

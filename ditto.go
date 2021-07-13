@@ -132,7 +132,7 @@ func (t *Transfer) Exchange(data []byte) ([]byte, error) {
 	if err := transformData(&spec); err != nil {
 		return nil, err
 	}
-	return opr.marshal(&spec)
+	return opr.marshal(spec)
 }
 
 func (t *Transfer) ExchangeED(r io.Reader, w io.Writer) error {
