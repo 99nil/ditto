@@ -141,15 +141,42 @@ title: demo
 `
 
 	tomlStr = `
-title = "demo"
-
+title = 'demo'
 [database]
-  connection_max = 5000
-  ports = [8001, 8002, 8003]
-  server = "127.0.0.1"
+connection_max = 5000
+ports = [8001, 8002, 8003]
+server = '127.0.0.1'
 
 [owner]
-  name = "zc"
+name = 'zc'
+`
+
+	xmlStr = `
+<xml>
+    <database>
+        <connection_max>5000</connection_max>
+        <ports>8001</ports>
+        <ports>8002</ports>
+        <ports>8003</ports>
+        <server>127.0.0.1</server>
+    </database>
+    <owner>
+        <name>zc</name>
+    </owner>
+	<title>demo</title>
+</xml>
+`
+	yamlStr2 = `
+database:
+  connection_max: "5000"
+  ports:
+  - "8001"
+  - "8002"
+  - "8003"
+  server: 127.0.0.1
+owner:
+  name: zc
+title: demo
 `
 )
 
@@ -216,6 +243,30 @@ func TestTransfer_Exchange(t1 *testing.T) {
 			want:    []byte(tomlStr),
 			wantErr: false,
 		},
+		{
+			name: "json-to-xml",
+			fields: fields{
+				in:  FormatJSON,
+				out: FormatXML,
+			},
+			args: args{
+				data: []byte(jsonStr),
+			},
+			want:    []byte(xmlStr),
+			wantErr: false,
+		},
+		{
+			name: "xml-to-yaml",
+			fields: fields{
+				in:  FormatXML,
+				out: FormatYaml,
+			},
+			args: args{
+				data: []byte(xmlStr),
+			},
+			want:    []byte(yamlStr2),
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
@@ -238,8 +289,9 @@ func TestTransfer_Exchange(t1 *testing.T) {
 }
 
 func UnifiedTreatment(data []byte) []byte {
-	data = bytes.TrimPrefix(data, []byte("\n"))
-	data = bytes.TrimSuffix(data, []byte("\n"))
+	data = bytes.TrimLeft(data, "\n")
+	data = bytes.TrimRight(data, "\n")
+	data = bytes.ReplaceAll(data, []byte("\t"), []byte("    "))
 	return data
 }
 

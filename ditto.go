@@ -22,7 +22,8 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/pelletier/go-toml"
+	xmle "github.com/99nil/ditto/xml"
+	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v2"
 )
 
@@ -107,18 +108,18 @@ func RegisterED(name string, eFunc EncoderFunc, dFunc DecoderFunc) {
 	e.dFunc = dFunc
 }
 
-func Marshal(typ string, v interface{}) ([]byte, error) {
-	e, ok := set[typ]
+func Marshal(name string, v interface{}) ([]byte, error) {
+	e, ok := set[name]
 	if !ok {
-		return nil, fmt.Errorf("failed to find %s engine", typ)
+		return nil, fmt.Errorf("failed to find %s engine", name)
 	}
 	return e.marshal(v)
 }
 
-func Unmarshal(typ string, data []byte, v interface{}) error {
-	e, ok := set[typ]
+func Unmarshal(name string, data []byte, v interface{}) error {
+	e, ok := set[name]
 	if !ok {
-		return fmt.Errorf("failed to find %s engine", typ)
+		return fmt.Errorf("failed to find %s engine", name)
 	}
 	return e.unmarshal(data, v)
 }
@@ -142,11 +143,22 @@ func (t *Transfer) Exchange(data []byte) ([]byte, error) {
 		return nil, errors.New("failed to find output engine")
 	}
 	var spec interface{}
-	if err := ipr.unmarshal(data, &spec); err != nil {
-		return nil, err
+	if t.in == FormatXML {
+		xmlSpec := make(xmle.Map)
+		if err := ipr.unmarshal(data, &xmlSpec); err != nil {
+			return nil, err
+		}
+		spec = xmlSpec
+	} else {
+		if err := ipr.unmarshal(data, &spec); err != nil {
+			return nil, err
+		}
 	}
 	if err := transformData(&spec); err != nil {
 		return nil, err
+	}
+	if t.out == FormatXML {
+		spec = xmle.Map(spec.(map[string]interface{}))
 	}
 	return opr.marshal(spec)
 }
