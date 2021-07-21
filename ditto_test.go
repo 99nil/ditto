@@ -155,9 +155,9 @@ name = 'zc'
 <xml>
     <database>
         <connection_max>5000</connection_max>
-        <ports>8001</ports>
-        <ports>8002</ports>
-        <ports>8003</ports>
+        <ports type="array">8001</ports>
+        <ports type="array">8002</ports>
+        <ports type="array">8003</ports>
         <server>127.0.0.1</server>
     </database>
     <owner>
@@ -244,13 +244,13 @@ func TestTransfer_Exchange(t1 *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "json-to-xml",
+			name: "yaml-to-xml",
 			fields: fields{
-				in:  FormatJSON,
+				in:  FormatYaml,
 				out: FormatXML,
 			},
 			args: args{
-				data: []byte(jsonStr),
+				data: []byte(yamlStr),
 			},
 			want:    []byte(xmlStr),
 			wantErr: false,
